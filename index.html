@@ -4,12 +4,11 @@
 <meta charset="UTF-8">
 <title>OniLang Playground</title>
 
-<!-- 🧩 CodeMirror 読み込み -->
+<!-- 🧩 CodeMirror -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/lib/codemirror.min.css">
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/lib/codemirror.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/mode/python/python.min.js"></script>
 
-<!-- 🎨 スタイル -->
 <style>
 body {
   font-family: 'Segoe UI', sans-serif;
@@ -99,13 +98,12 @@ function translateOniLang(code) {
   return code;
 }
 
-// 実行関数
+// 実行
 async function execute() {
   const code = editor.getValue();
   const pyCode = translateOniLang(code);
   const safeCode = JSON.stringify(pyCode);
 
-  // 改行ごとに結合してインデントずれ防止
   const wrapper = [
     "import io, sys",
     "from contextlib import redirect_stdout",
