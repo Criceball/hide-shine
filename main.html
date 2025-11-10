@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>OniLang Playground</title>
+
+<!-- 🧩 CodeMirror 読み込み -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/lib/codemirror.min.css">
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/mode/python/python.min.js"></script>
+
+<!-- 🎨 スタイル -->
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #1e1e1e;
+  color: #ddd;
+  text-align: center;
+  padding: 20px;
+}
+h1 { color: #f0db4f; }
+#editor {
+  width: 80%;
+  height: 250px;
+  margin: auto;
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+}
+button {
+  margin-top: 15px;
+  padding: 10px 25px;
+  font-size: 16px;
+  background: #007acc;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+button:hover { background: #0091ea; }
+pre {
+  background: #111;
+  color: #0f0;
+  padding: 15px;
+  width: 80%;
+  margin: 20px auto;
+  border-radius: 8px;
+  text-align: left;
+  white-space: pre-wrap;
+}
+</style>
+</head>
+
+<body>
+<h1>🧙 OniLang Playground</h1>
+<p>日本語でPythonを書ける新言語 OniLang</p>
+
+<div id="editor"></div>
+<button onclick="execute()">▶ 実行</button>
+<pre id="output">（Pyodide 読み込み中…）</pre>
+
+<!-- 🐍 Pyodide -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+
+<script>
+let pyodide;
+let editor;
+
+// CodeMirror 初期化
+window.onload = async function() {
+  editor = CodeMirror(document.getElementById("editor"), {
+    value: '繰り返す i で 範囲(3):\n    言う("こんにちは", i)',
+    mode: "python",
+    theme: "default",
+    lineNumbers: true,
+    indentUnit: 4,
+    tabSize: 4,
+  });
+
+  pyodide = await loadPyodide();
+  document.getElementById("output").textContent = "✅ Pyodide loaded!";
+};
+
+// OniLang → Python 変換
+function translateOniLang(code) {
+  const dict = {
+    "言う": "print",
+    "聞く": "input",
+    "もし": "if",
+    "それ以外": "else",
+    "繰り返す": "for",
+    "範囲": "range",
+    "定義": "def",
+    "で": "in"
+  };
+  for (const [jp, py] of Object.entries(dict)) {
+    code = code.replaceAll(jp, py);
+  }
+  return code;
+}
+
+// 実行関数
+async function execute() {
+  const code = editor.getValue();
+  const pyCode = translateOniLang(code);
+  const safeCode = JSON.stringify(pyCode);
+
+  // 改行ごとに結合してインデントずれ防止
+  const wrapper = [
+    "import io, sys",
+    "from contextlib import redirect_stdout",
+    "buf = io.StringIO()",
+    "try:",
+    "    with redirect_stdout(buf):",
+    `        exec(${safeCode}, {})`,
+    "    result = buf.getvalue()",
+    "except Exception as e:",
+    "    result = '⚠️ エラー: ' + str(e)",
+    "result"
+  ].join("\n");
+
+  try {
+    const result = await pyodide.runPythonAsync(wrapper);
+    document.getElementById("output").textContent = result.trim() || "（出力なし）";
+  } catch (err) {
+    document.getElementById("output").textContent = "⚠️ 実行エラー: " + err;
+  }
+}
+</script>
+</body>
+</html>
